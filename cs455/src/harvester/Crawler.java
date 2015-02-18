@@ -1,6 +1,7 @@
 package harvester;
 
 import util.CommandLineParser;
+import util.URLExtractor;
 
 /**
  * Created by ydubale on 2/17/15.
@@ -17,6 +18,10 @@ public class Crawler {
         System.out.println("Root: " + clp.rootUrl);
         System.out.println("Path: " + clp.pathToConfigFile);
         */
+
+        for(String url : URLExtractor.parseURL(clp.rootUrl)){
+            System.out.println(url);
+        }
 
 
     }

@@ -5,10 +5,6 @@ package util;
  */
 public class CommandLineParser {
 
-    private static final String INVALID_PORT = "Invalid port range. Must be between 1024 - 65535";
-    private static final String INVALID_PORT_FORMAT = "Improper port number format.";
-    private static final String INVALID_THREAD_POOL_SIZE = "Invalid thread pool size given.";
-
     private static final int MIN_VALID_PORT = 1024;
     private static final int MAX_VALID_PORT = 65535;
 
@@ -54,13 +50,8 @@ public class CommandLineParser {
             this.threadPoolSize = Integer.parseInt(threadPoolSizeString);
         }
         catch (NumberFormatException notValidNumber){
-            printErrorExit(INVALID_THREAD_POOL_SIZE);
+            Error.printErrorExit(Error.INVALID_THREAD_POOL_SIZE);
         }
-    }
-
-    private void printErrorExit(String error){
-        System.out.println("[ERROR]: " + error);
-        System.exit(1);
     }
 
     private void parsePort(String portString) {
@@ -68,12 +59,12 @@ public class CommandLineParser {
             int portNum = Integer.parseInt(portString);
 
             if(portNum < MIN_VALID_PORT || portNum > MAX_VALID_PORT){
-                printErrorExit(INVALID_PORT);
+                Error.printErrorExit(Error.INVALID_PORT);
             }
             this.portNum = portNum;
         }
         catch (NumberFormatException notValidPort){
-            printErrorExit(INVALID_PORT_FORMAT);
+            Error.printErrorExit(Error.INVALID_PORT_FORMAT);
         }
     }
 
