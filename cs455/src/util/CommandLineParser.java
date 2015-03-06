@@ -1,5 +1,9 @@
 package util;
 
+import harvester.Crawler;
+
+import java.io.*;
+
 /**
  * Created by ydubale on 2/17/15.
  */
@@ -12,6 +16,7 @@ public class CommandLineParser {
     public static int threadPoolSize;
     public static String rootUrl;
     public static String pathToConfigFile;
+    public static Crawler[] crawlers;
 
     /**
      * Expected input
@@ -19,18 +24,57 @@ public class CommandLineParser {
      * @param args - list of arguments
      */
     public CommandLineParser(String args[]) {
-        parsePort(args[0]);
+        this.portNum = parsePort(args[0]);
         parseThreadPoolSize(args[1]);
         parseRootUrl(args[2]);
-        parsePathToConfigFile(args[3]);
+        this.crawlers = parseConfigFile(args[3]);
+    }
+
+    public Crawler[] getCrawlers(){
+        return crawlers;
     }
 
     /**
      * TODO: What is a valid path? Will it include fileName?
      * @param pathToConfigFile
      */
-    private void parsePathToConfigFile(String pathToConfigFile) {
+    private Crawler[] parseConfigFile(String pathToConfigFile) {
         this.pathToConfigFile = pathToConfigFile;
+        File file = new File(pathToConfigFile);
+        BufferedReader bufferedReader = null;
+        try {
+            bufferedReader = new BufferedReader(new FileReader(file));
+        } catch (FileNotFoundException e) {
+            PrintHelper.printFail("configFile not found!");
+        }
+
+        Crawler[] crawlers = new Crawler[8];
+
+        String line;
+        int count = 0;
+        try {
+            while((line = bufferedReader.readLine()) != null){
+                crawlers[count] = extractCrawler(line);
+                count++;
+            }
+        } catch (IOException e) {
+            PrintHelper.printFail("parsing file config file");
+        }
+
+        return crawlers;
+    }
+
+    private Crawler extractCrawler(String line) throws IOException{
+        String[] hostportURL = line.split(":");
+
+        String hostName = hostportURL[0];
+
+        String[] portURL = hostportURL[1].split(",");
+
+        int port = parsePort(portURL[0]);
+        String url = portURL[1] + ":" +hostportURL[2];
+
+        return new Crawler(hostName, port, url);
     }
 
     /**
@@ -50,22 +94,23 @@ public class CommandLineParser {
             this.threadPoolSize = Integer.parseInt(threadPoolSizeString);
         }
         catch (NumberFormatException notValidNumber){
-            Error.printErrorExit(Error.INVALID_THREAD_POOL_SIZE);
+            PrintHelper.printErrorExit(PrintHelper.INVALID_THREAD_POOL_SIZE);
         }
     }
 
-    private void parsePort(String portString) {
+    private int parsePort(String portString) {
         try{
             int portNum = Integer.parseInt(portString);
 
             if(portNum < MIN_VALID_PORT || portNum > MAX_VALID_PORT){
-                Error.printErrorExit(Error.INVALID_PORT);
+                PrintHelper.printErrorExit(PrintHelper.INVALID_PORT);
             }
-            this.portNum = portNum;
+            return portNum;
         }
         catch (NumberFormatException notValidPort){
-            Error.printErrorExit(Error.INVALID_PORT_FORMAT);
+            PrintHelper.printErrorExit(PrintHelper.INVALID_PORT_FORMAT);
         }
+        return -1;
     }
 
 }
