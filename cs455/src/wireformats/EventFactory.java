@@ -1,5 +1,7 @@
 package wireformats;
 
+import util.PrintHelper;
+
 /**
  * Created by ydubale on 1/22/15.
  */
@@ -22,7 +24,7 @@ public class EventFactory {
             case Protocol.RELAY_URL_TO_CRAWL:
                 return new RelayURLToCrawl(data);
             default:
-                System.out.println("ERROR IN FACTORY!");
+                PrintHelper.printFail("EventFactory - Unrecognized event");
         }
 
         return null;

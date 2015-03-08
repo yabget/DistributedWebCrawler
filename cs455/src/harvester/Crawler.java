@@ -39,10 +39,10 @@ public class Crawler {
             PageCrawler crawler = new PageCrawler(clp.threadPoolSize, clp.rootUrl, clp.portNum, clp.getCrawlers());
             crawler.startServerThread();
             //Wait for all servers to start on other machines
-            Util.sleepSeconds(15);
+            Util.sleepSeconds(10);
             crawler.setupConnectionWithOtherCrawlers();
             //Wait to make sure all connections have been made
-            Util.sleepSeconds(15);
+            Util.sleepSeconds(10);
             crawler.startThreadPoolManager();
 
         } catch (IOException e) {

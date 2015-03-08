@@ -6,8 +6,8 @@ import Worker.ThreadPoolManager;
 import transport.TCPConnection;
 import transport.TCPConnectionsCache;
 import transport.TCPServerThread;
+import util.HTMLParser;
 import util.PrintHelper;
-import util.URLExtractor;
 import wireformats.Event;
 import wireformats.Protocol;
 import wireformats.RelayURLToCrawl;
@@ -24,35 +24,32 @@ import java.net.UnknownHostException;
  */
 public class PageCrawler extends Crawler implements Harvester {
 
-
-    private final int threadPoolSize;
     private ThreadPoolManager threadPoolManager;
 
     private String rootURLDir;
 
     private Graph graph;
 
-    private TCPConnection tcpConnection;
     private TCPConnectionsCache tcpConnectionsCache;
 
     private Crawler[] allCrawlers;
 
     public PageCrawler(String hostName, int portNum, String rootURL) {
         super(hostName, portNum, rootURL);
-        threadPoolSize = 0;
+
     }
 
     public PageCrawler(int threadPoolSize, String rootURL, int server_port, Crawler[] allCrawlers) throws UnknownHostException {
         super(InetAddress.getLocalHost().getHostName(), server_port, rootURL);
 
-        this.threadPoolSize = threadPoolSize;
         tcpConnectionsCache = new TCPConnectionsCache();
         graph = new Graph(rootURL);
 
         this.allCrawlers = allCrawlers;
 
-        String rootDir = URLExtractor.convertToDirectory(rootURL);
+        String rootDir = HTMLParser.convertToDirectory(rootURL);
         this.rootURLDir = "/tmp/ydubale/" + rootDir;
+        threadPoolManager = new ThreadPoolManager(threadPoolSize, rootURL, graph, tcpConnectionsCache);
     }
 
     public void setupConnectionWithOtherCrawlers(){
@@ -89,7 +86,6 @@ public class PageCrawler extends Crawler implements Harvester {
 
     public void startThreadPoolManager(){
         //Start thread pool
-        threadPoolManager = new ThreadPoolManager(threadPoolSize, rootURL, graph, tcpConnectionsCache);
         Thread tpmThread = new Thread(threadPoolManager);
         tpmThread.start();
     }
@@ -104,25 +100,29 @@ public class PageCrawler extends Crawler implements Harvester {
     private void handleRelayedURLToCrawl(Event event) {
         RelayURLToCrawl relayURLToCrawl = (RelayURLToCrawl) event;
         if(relayURLToCrawl == null){
-            PrintHelper.printErrorExit("RELAY EVENT RECEIVED IS NULL: " + relayURLToCrawl);
+            PrintHelper.printErrorExit("PageCrawler - RELAY EVENT RECEIVED IS NULL: " + relayURLToCrawl);
+        }
+        if(threadPoolManager == null){
+            PrintHelper.printErrorExit("PageCralwer - ThreadPoolManaager is null: ");
         }
 
-        PrintHelper.printSuccess("Receieved: " + relayURLToCrawl.getUrlToCrawl() + " to crawl.");
-        threadPoolManager.addToTask(new CrawlPage(relayURLToCrawl.getUrlToCrawl(), 0));
+        //PrintHelper.printSuccess("Receieved: " + relayURLToCrawl.getUrlToCrawl() + " to crawl.");
+        threadPoolManager.addToTask(new CrawlPage(relayURLToCrawl.getUrlToCrawl(), 1));
     }
 
     @Override
     public void onEvent(Event event) {
+        synchronized (event){
+            byte protocol = event.getType();
 
-        byte protocol = event.getType();
-
-        switch (protocol){
-            case Protocol.RELAY_URL_TO_CRAWL:
-                handleRelayedURLToCrawl(event);
-            default:
-                PrintHelper.printFail("Unrecognized event!");
+            switch (protocol){
+                case Protocol.RELAY_URL_TO_CRAWL:
+                    handleRelayedURLToCrawl(event);
+                    return;
+                default:
+                    PrintHelper.printFail("PageCrawler - Unrecognized event! " + protocol);
+            }
         }
-
     }
 
     private void createFile(String filePath){

@@ -26,12 +26,12 @@ public class TCPServerThread implements Runnable {
             //System.out.println("Server thread is running: " + serverSocket.getLocalSocketAddress().toString());
             while((socket = serverSocket.accept()) != null){
                 //Starts a new receiver thread to listen on the socket
-                System.out.println("Accepted new connection! " + socket.getInetAddress().getHostAddress().toString());
+                System.out.println("TCPServerThread - Accepted new connection! " + socket.getInetAddress().getHostAddress().toString());
                 TCPConnection newConnection = new TCPConnection(socket, harvester);
                 newConnection.startReceiveThread();
             }
         } catch (IOException e) {
-            System.out.println("Problem configuring new TCPConnection (TCPServerThread).");
+            System.out.println("TCPServerThread - Problem configuring new TCPConnection (TCPServerThread).");
         }
     }
 

@@ -12,13 +12,11 @@ public class Graph {
     private int recursionDepth;
 
     private ArrayList<String> brokenLinks;
-    private ArrayList<String> visitedLinks;
 
     private String rootURL;
 
     public Graph(String rootURL){
         this.brokenLinks = new ArrayList<String>();
-        visitedLinks = new ArrayList<String>();
         this.rootURL = rootURL;
         nodes = new Hashtable<String, Node>();
         recursionDepth = 1;
@@ -30,19 +28,6 @@ public class Graph {
                 nodes.put(urlToAdd, new Node(urlToAdd));
             }
         }
-    }
-
-    public synchronized boolean isVisited(String page){
-        for(String p : visitedLinks){
-            if(p.equals(page)){
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public synchronized void addVisitedLink(String page){
-        visitedLinks.add(page);
     }
 
     public synchronized void addBrokenLink(String brokenLink){

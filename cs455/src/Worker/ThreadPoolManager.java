@@ -4,6 +4,8 @@ import Graph.Graph;
 import Task.CrawlPage;
 import Task.Task;
 import transport.TCPConnectionsCache;
+import util.HTMLParser;
+import util.PrintHelper;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -29,11 +31,13 @@ public class ThreadPoolManager implements Runnable {
             threadpool.add(new Thread(new Worker(tasks, this.graph, this.tcpConnectionsCache)));
         }
 
-        tasks.offer(new CrawlPage(rootURL, -1));
+        tasks.offer(new CrawlPage(rootURL, 1)); //Add the root url to be crawled
+        HTMLParser.getInstance().addToCrawledURLs(rootURL);
+
         for(Thread thread : threadpool){
             thread.start();
         }
-        System.out.println("Started all threads");
+        PrintHelper.printAlert("ThreadPoolManger - Started all threads");
     }
 
     public void addToTask(Task task){
@@ -55,7 +59,7 @@ public class ThreadPoolManager implements Runnable {
                         tasks.wait();
                         break;
                     } catch (InterruptedException e) {
-                        System.out.println("ThreadPoolManager: Interrupted while waiting on Task.");
+                        System.out.println("ThreadPoolManager - Interrupted while waiting on Task.");
                     }
                 }else{
                     tasks.notifyAll();

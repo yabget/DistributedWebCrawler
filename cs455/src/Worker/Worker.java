@@ -49,10 +49,6 @@ public class Worker implements Runnable {
         graph.addFromTo(source, dest);
     }
 
-    public void addVisitedLink(String link){
-        graph.addVisitedLink(link);
-    }
-
     public void relayToOtherCrawler(String crawlerURL, String urlToCrawl){
         RelayURLToCrawl relayURLToCrawl = new RelayURLToCrawl(urlToCrawl);
         tcpConnectionsCache.sendEvent(crawlerURL, relayURLToCrawl);
@@ -70,7 +66,7 @@ public class Worker implements Runnable {
                         toDo.execute(this);
                     }
                 } catch (InterruptedException e) {
-                    System.out.println("Worker: Interrupted while waiting on Task.");
+                    System.out.println("Worker - Interrupted while waiting on Task.");
                 }
             }
         }

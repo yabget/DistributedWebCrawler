@@ -1,5 +1,6 @@
 package transport;
 
+import util.PrintHelper;
 import wireformats.Event;
 
 import java.util.Hashtable;
@@ -15,20 +16,21 @@ public class TCPConnectionsCache {
         tcpConns = new Hashtable<String, TCPConnection>();
     }
 
-    public void addNewConn(String url, TCPConnection  tcpC){
+    public synchronized void addNewConn(String url, TCPConnection  tcpC){
         tcpConns.put(url, tcpC);
     }
 
-    public void removeConn(String url){
-        //todo: check if remove needs a check if exists
-        tcpConns.remove(url);
-    }
+    public synchronized void sendEvent(String url, Event event){
+        if(event == null){
+            PrintHelper.printErrorExit("TCPConnectionsCache - event is null sending.");
+        }
+        if(tcpConns == null){
+            PrintHelper.printErrorExit("TCPConnectionsCache - is null.");
+        }
+        if(tcpConns.get(url) == null){
+            PrintHelper.printErrorExit("TCPConnectionsCache - get " + url + " is null.");
+        }
 
-    public TCPConnection getTCPConnection(String url){
-        return tcpConns.get(url);
-    }
-
-    public void sendEvent(String url, Event event){
         tcpConns.get(url).sendData(event.getBytes());
     }
 

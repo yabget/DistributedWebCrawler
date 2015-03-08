@@ -58,7 +58,7 @@ public class CommandLineParser {
                 count++;
             }
         } catch (IOException e) {
-            PrintHelper.printFail("parsing file config file");
+            PrintHelper.printFail("CommandLineParser - parsing file config file");
         }
 
         return crawlers;
