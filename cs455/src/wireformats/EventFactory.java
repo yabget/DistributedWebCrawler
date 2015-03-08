@@ -23,6 +23,10 @@ public class EventFactory {
 
             case Protocol.RELAY_URL_TO_CRAWL:
                 return new RelayURLToCrawl(data);
+            case Protocol.CRAWLER_REPORTS_RELAYED_TASK_FINISHED:
+                return new CrawlerReportsRelayedTaskFinished(data);
+            case Protocol.CRAWLER_REPORTS_SELF_TASKS_FINISHED:
+                return new CrawlerReportsSelfTasksFinished(data);
             default:
                 PrintHelper.printFail("EventFactory - Unrecognized event");
         }
