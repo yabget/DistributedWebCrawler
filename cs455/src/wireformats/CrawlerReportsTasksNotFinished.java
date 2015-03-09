@@ -3,19 +3,19 @@ package wireformats;
 /**
  * Created by ydubale on 3/8/15.
  */
-public class CrawlerReportsSelfTasksFinished implements Event {
+public class CrawlerReportsTasksNotFinished implements Event {
 
     private byte type;
     private byte urlLength;
     private String crawlerRootURL;
 
-    public CrawlerReportsSelfTasksFinished(String crawlerRootURL){
-        type = Protocol.CRAWLER_REPORTS_SELF_TASKS_FINISHED;
+    public CrawlerReportsTasksNotFinished(String crawlerRootURL){
+        type = Protocol.CRAWLER_REPORTS_TASKS_NOT_FINISHED;
         this.crawlerRootURL = crawlerRootURL;
         this.urlLength = (byte) crawlerRootURL.length();
     }
 
-    public CrawlerReportsSelfTasksFinished(byte[] data){
+    public CrawlerReportsTasksNotFinished(byte[] data){
         ByteReader byteReader = new ByteReader(data);
 
         type = byteReader.readByte();
@@ -50,4 +50,5 @@ public class CrawlerReportsSelfTasksFinished implements Event {
     public byte getType() {
         return type;
     }
+
 }

@@ -14,4 +14,15 @@ public final class Storage {
                 "http://www.colostate.edu/Depts/Psychology",
                 "http://www.stat.colostate.edu"
         };
+
+        /*public static final String[] validRedirectDomains = {
+                "http://www.math.colostate.edu",
+                "http://www.math.colostate.edu",
+                "http://www.math.colostate.edu",
+                "http://www.math.colostate.edu",
+                "http://www.math.colostate.edu",
+                "http://www.math.colostate.edu",
+                "http://www.math.colostate.edu",
+                "http://www.math.colostate.edu",
+        };*/
 }

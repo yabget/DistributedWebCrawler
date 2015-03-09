@@ -3,6 +3,7 @@ package Worker;
 import Graph.Graph;
 import Task.CrawlPage;
 import Task.Task;
+import harvester.PageCrawler;
 import transport.TCPConnectionsCache;
 import util.HTMLParser;
 import util.PrintHelper;
@@ -13,14 +14,15 @@ import java.util.Queue;
 /**
  * Created by ydubale on 3/1/15.
  */
-public class ThreadPoolManager implements Runnable {
+public class ThreadPoolManager {
 
     private Queue<Task> tasks;
     private Queue<Thread> threadpool;
     private TCPConnectionsCache tcpConnectionsCache;
     private Graph graph;
 
-    public ThreadPoolManager(int threadPoolSize, String rootURL, Graph graph, TCPConnectionsCache tcpConnectionsCache) {
+    public ThreadPoolManager(int threadPoolSize, String rootURL, Graph graph,
+                             TCPConnectionsCache tcpConnectionsCache, PageCrawler pageCrawler) {
         threadpool = new LinkedList<Thread>();
         tasks = new LinkedList<Task>();
 
@@ -28,45 +30,80 @@ public class ThreadPoolManager implements Runnable {
         this.graph = graph;
 
         for(int i = 0; i < threadPoolSize; i++){
-            threadpool.add(new Thread(new Worker(tasks, this.graph, this.tcpConnectionsCache)));
+            threadpool.add(new Thread(new Worker(tasks, this.graph, this.tcpConnectionsCache, pageCrawler)));
         }
 
-        tasks.offer(new CrawlPage(rootURL, 1)); //Add the root url to be crawled
+        tasks.offer(new CrawlPage(rootURL, 1, false, null)); //Add the root url to be crawled
         HTMLParser.getInstance().addToCrawledURLs(rootURL);
 
-        for(Thread thread : threadpool){
-            thread.start();
-        }
-        PrintHelper.printAlert("ThreadPoolManger - Started all threads");
     }
 
     public void addToTask(Task task){
         synchronized (tasks){
             tasks.offer(task);
-            tasks.notifyAll();
+            System.out.println("THEADPOOLMANAGER - NEW TASK ADDED TO QUEUE: " + tasks.size());
+            tasks.notify();
+            System.out.println("THEADPOOLMANAGER - SENT NOTIFIED: " + tasks.size());
         }
     }
 
+    public void startWorkers(){
+        for(Thread thread : threadpool){
+            thread.start();
+        }
+        PrintHelper.printAlert("THEADPOOLMANAGER - Started all threads");
+    }
+
+    /*
     @Override
     public void run() {
+
+
+
+        while(true){
+            if(!tasks.isEmpty()){
+                tasks.notify();
+            }
+        }
+
         while (true){
+            Util.sleepSeconds(5);
             synchronized (tasks){
                 if(tasks.isEmpty()){
-                    System.out.println("TaskQueue is empty");
                     try {
-                        //todo: check if it is the end of the program?
-                        System.out.println("Waiting for notification.");
+                        System.out.println("THEADPOOLMANAGER - Task queue is empty. " + tasks.size());
+                        tcpConnectionsCache.sendToAll(new CrawlerReportsSelfTasksFinished(graph.getRootURL()));
+                        System.out.println("THEADPOOLMANAGER - TOLD ALL NODES I'M DONE WITH TASKS");
+                        if(pageCrawler.getRelayedCount() == 0 && pageCrawler.allOtherCrawlersFinished()){
+                            PrintHelper.printAlert("NICE! All other crawlers finished and I am finished with my tasks." +
+                                    " Goodbye.");
+                            break;
+                        }
+                        System.out.println("THEADPOOLMANAGER - SITTING AND WAITING FOR TASK NOTIFY");
                         tasks.wait();
-                        break;
+                        System.out.println("THEADPOOLMANAGER - NOTIFY OCCURED! NOTIFY OCCURED!");
                     } catch (InterruptedException e) {
-                        System.out.println("ThreadPoolManager - Interrupted while waiting on Task.");
+                        System.out.println("THEADPOOLMANAGER - Interrupted while waiting on Task.");
                     }
                 }else{
-                    tasks.notifyAll();
+                    System.out.println("THEADPOOLMANAGER - TASK IS NOT EMPTY! " + tasks.size());
+                    tasks.notify();
+                    System.out.println("THEADPOOLMANAGER - NOTIFIED SOMEONE TO WORK ON TASK " + tasks.size());
+                    Util.sleepSeconds(5);
+                    System.out.println("THEADPOOLMANAGER - TELLING OTHER NODES I'M NOT FIN " + tasks.size());
+                    CrawlerReportsTasksNotFinished notFin = new CrawlerReportsTasksNotFinished(graph.getRootURL());
+                    tcpConnectionsCache.sendToAll(notFin);
+                    System.out.println("THEADPOOLMANAGER - TOLD OTHER NODES I'M NOT FIN " + tasks.size());
                 }
             }
         }
-        graph.printTree();
     }
+    */
 
+    public void notifyTaskPool() {
+        synchronized (tasks){
+            //System.out.println("THEADPOOLMANAGER - NOTIFYING TASK POOL METHOD: " + tasks.size());
+            tasks.notifyAll();
+        }
+    }
 }

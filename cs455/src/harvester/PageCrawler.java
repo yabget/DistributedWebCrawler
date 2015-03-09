@@ -8,9 +8,8 @@ import transport.TCPConnectionsCache;
 import transport.TCPServerThread;
 import util.HTMLParser;
 import util.PrintHelper;
-import wireformats.Event;
-import wireformats.Protocol;
-import wireformats.RelayURLToCrawl;
+import util.Storage;
+import wireformats.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +17,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 /**
  * Created by ydubale on 3/5/15.
@@ -34,13 +34,25 @@ public class PageCrawler extends Crawler implements Harvester {
 
     private Crawler[] allCrawlers;
 
+    private int relayedCount = 0;
+
+    private ArrayList<String> completedCrawlers;
+
     public PageCrawler(String hostName, int portNum, String rootURL) {
         super(hostName, portNum, rootURL);
 
     }
 
+    public synchronized int getRelayedCount(){
+        int copy = relayedCount;
+        return copy;
+    }
+
     public PageCrawler(int threadPoolSize, String rootURL, int server_port, Crawler[] allCrawlers) throws UnknownHostException {
         super(InetAddress.getLocalHost().getHostName(), server_port, rootURL);
+
+        completedCrawlers = new ArrayList<String>();
+        completedCrawlers.add(rootURL);
 
         tcpConnectionsCache = new TCPConnectionsCache();
         graph = new Graph(rootURL);
@@ -49,7 +61,7 @@ public class PageCrawler extends Crawler implements Harvester {
 
         String rootDir = HTMLParser.convertToDirectory(rootURL);
         this.rootURLDir = "/tmp/ydubale/" + rootDir;
-        threadPoolManager = new ThreadPoolManager(threadPoolSize, rootURL, graph, tcpConnectionsCache);
+        threadPoolManager = new ThreadPoolManager(threadPoolSize, rootURL, graph, tcpConnectionsCache, this);
     }
 
     public void setupConnectionWithOtherCrawlers(){
@@ -86,8 +98,7 @@ public class PageCrawler extends Crawler implements Harvester {
 
     public void startThreadPoolManager(){
         //Start thread pool
-        Thread tpmThread = new Thread(threadPoolManager);
-        tpmThread.start();
+        threadPoolManager.startWorkers();
     }
 
     public void initializeDirectories(){
@@ -103,11 +114,46 @@ public class PageCrawler extends Crawler implements Harvester {
             PrintHelper.printErrorExit("PageCrawler - RELAY EVENT RECEIVED IS NULL: " + relayURLToCrawl);
         }
         if(threadPoolManager == null){
-            PrintHelper.printErrorExit("PageCralwer - ThreadPoolManaager is null: ");
+            PrintHelper.printErrorExit("PageCrawler - ThreadPoolManager is null: ");
         }
 
         //PrintHelper.printSuccess("Receieved: " + relayURLToCrawl.getUrlToCrawl() + " to crawl.");
-        threadPoolManager.addToTask(new CrawlPage(relayURLToCrawl.getUrlToCrawl(), 1));
+        threadPoolManager.addToTask(new CrawlPage(relayURLToCrawl.getUrlToCrawl(), 1,
+                true, relayURLToCrawl.getSenderURL()));
+    }
+
+    private void handleOtherCrawlerTaskFinished(Event event) {
+        CrawlerReportsSelfTasksFinished otherC = (CrawlerReportsSelfTasksFinished) event;
+        String otherCrawlerURL = otherC.getCrawlerRootURL();
+        synchronized (completedCrawlers){
+            if(!completedCrawlers.contains(otherCrawlerURL)){
+                completedCrawlers.add(otherCrawlerURL);
+                threadPoolManager.notifyTaskPool();
+                System.out.println(completedCrawlers.size() + " Crawlers say they are finished.");
+                for(String s : completedCrawlers){
+                    System.out.println("\t\t" + s);
+                }
+            }
+        }
+    }
+
+    public synchronized boolean allOtherCrawlersFinished(){
+        for(String validURL : Storage.validRedirectDomains){
+            if(!completedCrawlers.contains(validURL)){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void handleOtherCrawlerTaskNotFinished(Event event) {
+        CrawlerReportsTasksNotFinished notFin = (CrawlerReportsTasksNotFinished) event;
+        synchronized (completedCrawlers){
+            if(completedCrawlers.contains(notFin.getCrawlerRootURL())){
+                completedCrawlers.remove(completedCrawlers);
+                threadPoolManager.notifyTaskPool();
+            }
+        }
     }
 
     @Override
@@ -118,6 +164,15 @@ public class PageCrawler extends Crawler implements Harvester {
             switch (protocol){
                 case Protocol.RELAY_URL_TO_CRAWL:
                     handleRelayedURLToCrawl(event);
+                    return;
+                case Protocol.CRAWLER_REPORTS_RELAYED_TASK_FINISHED:
+                    relayedCount--;
+                    return;
+                case Protocol.CRAWLER_REPORTS_SELF_TASKS_FINISHED:
+                    handleOtherCrawlerTaskFinished(event);
+                    return;
+                case Protocol.CRAWLER_REPORTS_TASKS_NOT_FINISHED:
+                    handleOtherCrawlerTaskNotFinished(event);
                     return;
                 default:
                     PrintHelper.printFail("PageCrawler - Unrecognized event! " + protocol);
@@ -149,4 +204,11 @@ public class PageCrawler extends Crawler implements Harvester {
         }
     }
 
+    public synchronized void incrementRelayedCount() {
+        relayedCount++;
+    }
+
+    public void sendRelayedTaskFinished(String toSendTo, String page) {
+        tcpConnectionsCache.sendEvent(toSendTo, new CrawlerReportsRelayedTaskFinished());
+    }
 }

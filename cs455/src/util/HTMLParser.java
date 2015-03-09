@@ -235,6 +235,8 @@ public class HTMLParser {
                 PrintHelper.printAlert("Resolved " + page + " to " + redirectResolvedPage);
             }*/
             HttpURLConnection connection = (HttpURLConnection)(new URL(page).openConnection());
+            connection.setReadTimeout(5 * 1000);
+            connection.setConnectTimeout(5 * 1000);
             connection.connect();
             InputStream inputStream = connection.getInputStream();
             // this is the actual url, the page is redirected to (if there is a redirect).

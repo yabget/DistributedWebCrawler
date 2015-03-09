@@ -12,10 +12,14 @@ public class CrawlPage implements Task {
 
     private String page;
     private int recursionDepth;
+    private boolean isRelayedPacket;
+    private String relayerURL;
 
-    public CrawlPage(String page, int recursionDepth){
+    public CrawlPage(String page, int recursionDepth, boolean isRelayedPacket, String relayerURL){
         this.page = page;
         this.recursionDepth = recursionDepth;
+        this.isRelayedPacket = isRelayedPacket;
+        this.relayerURL = relayerURL;
     }
 
     @Override
@@ -33,17 +37,23 @@ public class CrawlPage implements Task {
                     if(HTMLParser.getInstance().addToRelayedURLs(page)){
                         //PrintHelper.printAlert("CrawlPage - Sending: [" + page + "] to crawler " + otherCrawlerURL);
                         worker.relayToOtherCrawler(otherCrawlerURL, page);
+                        worker.incrementRelayedCount();
                     }
                     break;
                 }
             }
             return;
         }
-        System.out.println("[CRAWLED " + recursionDepth + "]\t" + page);
+        //System.out.println("[CRAWLED " + recursionDepth + "]\t" + page);
+
+        if(isRelayedPacket){
+            worker.sendRelayedTaskFinished(relayerURL, page);
+        }
+
         //Add to graph all the out-in node relationships
         recursionDepth++;
         for(String outNode : HTMLParser.getInstance().getUnCrawledURLs(page)){
-            worker.addToTasks(new CrawlPage(outNode, recursionDepth));
+            worker.addToTasks(new CrawlPage(outNode, recursionDepth, false, null));
             worker.addFromToGraph(this.page, outNode);
         }
     }

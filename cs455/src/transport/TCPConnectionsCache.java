@@ -34,6 +34,12 @@ public class TCPConnectionsCache {
         tcpConns.get(url).sendData(event.getBytes());
     }
 
+    public synchronized void sendToAll(Event event){
+        for(TCPConnection tcpConnection : tcpConns.values()){
+            tcpConnection.sendData(event.getBytes());
+        }
+    }
+
     public String toString(){
         String toReturn = "\nExisting connections\n";
         for(String i : tcpConns.keySet()){

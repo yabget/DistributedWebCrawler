@@ -5,11 +5,16 @@ package util;
  */
 public final class Util {
 
-    public static void sleepSeconds(int seconds){
+    public static void sleepSeconds(int seconds, boolean printHelp){
         try {
-            System.out.println("Counting to " + seconds + " seconds!");
+            if(printHelp){
+                System.out.println("Sleeping for " + seconds + " seconds!");
+            }
+
             for(int i=0; i< seconds; i++){
-                System.out.println("Second " + (i + 1));
+                if(printHelp){
+                    System.out.println("Second " + (i + 1));
+                }
                 Thread.sleep(1000);
             }
         } catch (InterruptedException e) {

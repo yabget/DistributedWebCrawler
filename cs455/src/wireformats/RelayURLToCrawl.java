@@ -8,11 +8,15 @@ public class RelayURLToCrawl implements Event {
     private byte type;
     private byte urlLength;
     private String urlToCrawl;
+    private String senderURL;
+    private byte sendURLLength;
 
-    public RelayURLToCrawl(String urlToCrawl){
+    public RelayURLToCrawl(String urlToCrawl, String senderURL){
         this.type = Protocol.RELAY_URL_TO_CRAWL;
         this.urlLength = (byte) urlToCrawl.length();
         this.urlToCrawl = urlToCrawl;
+        this.sendURLLength = (byte) senderURL.length();
+        this.senderURL = senderURL;
     }
 
     public RelayURLToCrawl(byte[] data){
@@ -24,7 +28,15 @@ public class RelayURLToCrawl implements Event {
 
         urlToCrawl = byteReader.readString(urlLength);
 
+        sendURLLength = byteReader.readByte();
+
+        senderURL = byteReader.readString(sendURLLength);
+
         byteReader.close();
+    }
+
+    public String getSenderURL(){
+        return senderURL;
     }
 
     public String getUrlToCrawl(){
@@ -40,6 +52,10 @@ public class RelayURLToCrawl implements Event {
         byteWriter.writeByte(urlLength);
 
         byteWriter.writeString(urlToCrawl);
+
+        byteWriter.writeByte(sendURLLength);
+
+        byteWriter.writeString(senderURL);
 
         byteWriter.close();
 

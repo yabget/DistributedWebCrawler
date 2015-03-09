@@ -27,6 +27,8 @@ public class EventFactory {
                 return new CrawlerReportsRelayedTaskFinished(data);
             case Protocol.CRAWLER_REPORTS_SELF_TASKS_FINISHED:
                 return new CrawlerReportsSelfTasksFinished(data);
+            case Protocol.CRAWLER_REPORTS_TASKS_NOT_FINISHED:
+                return new CrawlerReportsTasksNotFinished(data);
             default:
                 PrintHelper.printFail("EventFactory - Unrecognized event");
         }
