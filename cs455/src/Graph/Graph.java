@@ -1,7 +1,9 @@
 package Graph;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Hashtable;
+import java.util.List;
 
 /**
  * Created by ydubale on 2/28/15.
@@ -57,6 +59,14 @@ public class Graph {
             toAddTo.addOut(nodes.get(urlNode));
             nodes.get(urlNode).addIn(toAddTo);
         }
+    }
+
+    public Collection<Node> getNodes(){
+        return nodes.values();
+    }
+
+    public List<String> getBrokenLinks(){
+        return brokenLinks;
     }
 
     public void printTree(){

@@ -49,9 +49,10 @@ public class HTMLParser {
         dirURL.replace("https://", "");
         dirURL = dirURL.replace("http://", "");
 
-        if(dirURL.charAt(dirURL.length()-1) == '/'){
+        /*if(dirURL.charAt(dirURL.length()-1) == '/'){
             dirURL = dirURL.substring(0, dirURL.length()-1);
-        }
+        }*/
+        dirURL = dirURL.replaceAll("/", "_");
 
         return dirURL;
     }

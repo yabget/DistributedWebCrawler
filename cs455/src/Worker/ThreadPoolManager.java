@@ -52,6 +52,15 @@ public class ThreadPoolManager {
             thread.start();
         }
         PrintHelper.printAlert("THEADPOOLMANAGER - Started all threads");
+        try {
+            for(Thread thread : threadpool){
+                System.out.println("Thread waiting for join " + thread.getId());
+                thread.join();
+                System.out.println("Thread Joined " + thread.getId());
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /*

@@ -46,11 +46,12 @@ public class Crawler {
             Util.sleepSeconds(10, true);
             System.out.println(" CRAWLER - Starting thread pool");
             crawler.startThreadPoolManager();
+            crawler.writeGraphToDirectories();
+            System.out.println("I am " + clp.rootUrl + " exiting! Goodybye and so long for all the links.");
 
         } catch (IOException e) {
             //e.printStackTrace();
             PrintHelper.printErrorExit("Could not start server on " + clp.portNum);
         }
-        //crawler.initializeDirectories();
     }
 }

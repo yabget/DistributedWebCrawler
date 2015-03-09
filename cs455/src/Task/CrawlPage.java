@@ -2,6 +2,7 @@ package Task;
 
 import Worker.Worker;
 import util.HTMLParser;
+import util.PrintHelper;
 import util.Storage;
 
 /**
@@ -35,7 +36,7 @@ public class CrawlPage implements Task {
             for(String otherCrawlerURL : Storage.validRedirectDomains){
                 if(page.contains(otherCrawlerURL)){
                     if(HTMLParser.getInstance().addToRelayedURLs(page)){
-                        //PrintHelper.printAlert("CrawlPage - Sending: [" + page + "] to crawler " + otherCrawlerURL);
+                        PrintHelper.printAlert("CrawlPage - Sending: [" + page + "] to crawler " + otherCrawlerURL);
                         worker.relayToOtherCrawler(otherCrawlerURL, page);
                         worker.incrementRelayedCount();
                     }

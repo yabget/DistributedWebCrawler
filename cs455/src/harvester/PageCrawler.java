@@ -1,6 +1,7 @@
 package harvester;
 
 import Graph.Graph;
+import Graph.Node;
 import Task.CrawlPage;
 import Worker.ThreadPoolManager;
 import transport.TCPConnection;
@@ -8,10 +9,9 @@ import transport.TCPConnectionsCache;
 import transport.TCPServerThread;
 import util.HTMLParser;
 import util.PrintHelper;
-import util.Storage;
+import util.Util;
 import wireformats.*;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -26,17 +26,15 @@ public class PageCrawler extends Crawler implements Harvester {
 
     private ThreadPoolManager threadPoolManager;
 
-    private String rootURLDir;
-
     private Graph graph;
 
     private TCPConnectionsCache tcpConnectionsCache;
 
     private Crawler[] allCrawlers;
 
-    private int relayedCount = 0;
-
     private ArrayList<String> completedCrawlers;
+
+    private int relayedCount = 0;
 
     public PageCrawler(String hostName, int portNum, String rootURL) {
         super(hostName, portNum, rootURL);
@@ -48,7 +46,9 @@ public class PageCrawler extends Crawler implements Harvester {
         return copy;
     }
 
-    public PageCrawler(int threadPoolSize, String rootURL, int server_port, Crawler[] allCrawlers) throws UnknownHostException {
+    public PageCrawler(int threadPoolSize, String rootURL, int server_port, Crawler[] allCrawlers)
+            throws UnknownHostException {
+
         super(InetAddress.getLocalHost().getHostName(), server_port, rootURL);
 
         completedCrawlers = new ArrayList<String>();
@@ -59,8 +59,6 @@ public class PageCrawler extends Crawler implements Harvester {
 
         this.allCrawlers = allCrawlers;
 
-        String rootDir = HTMLParser.convertToDirectory(rootURL);
-        this.rootURLDir = "/tmp/ydubale/" + rootDir;
         threadPoolManager = new ThreadPoolManager(threadPoolSize, rootURL, graph, tcpConnectionsCache, this);
     }
 
@@ -101,13 +99,6 @@ public class PageCrawler extends Crawler implements Harvester {
         threadPoolManager.startWorkers();
     }
 
-    public void initializeDirectories(){
-        createDirectory(rootURLDir);
-        createDirectory(rootURLDir + "/nodes");
-        createDirectory(rootURLDir + "/disjoint-subgraphs");
-        createFile(rootURLDir + "/broken-links");
-    }
-
     private void handleRelayedURLToCrawl(Event event) {
         RelayURLToCrawl relayURLToCrawl = (RelayURLToCrawl) event;
         if(relayURLToCrawl == null){
@@ -138,12 +129,17 @@ public class PageCrawler extends Crawler implements Harvester {
     }
 
     public synchronized boolean allOtherCrawlersFinished(){
+        if(completedCrawlers.size() >= 1){
+            return true;
+        }
+        /*
         for(String validURL : Storage.validRedirectDomains){
             if(!completedCrawlers.contains(validURL)){
                 return false;
             }
         }
-        return true;
+        */
+        return false;
     }
 
     private void handleOtherCrawlerTaskNotFinished(Event event) {
@@ -180,27 +176,19 @@ public class PageCrawler extends Crawler implements Harvester {
         }
     }
 
-    private void createFile(String filePath){
-        File file = new File(filePath);
-        if(!file.exists()){
-            try {
-                file.createNewFile();
-                //PrintHelper.printSuccess("Created " + filePath);
-            } catch (IOException e) {
-                //PrintHelper.printFail("Could not create " + filePath);
-            }
-        }
-    }
+    public void writeGraphToDirectories(){
+        System.out.println("Writing to directories.");
+        String rootURL = graph.getRootURL();
+        String rootDir = HTMLParser.convertToDirectory(rootURL);
+        System.out.println("Root DIR is: " + rootDir);
+        for(Node node : graph.getNodes()){
+            String nodeDir = "/tmp/cs455-ydubale/" + rootDir + "/nodes/" + HTMLParser.convertToDirectory(node.getValue());
 
-    private void createDirectory(String dirPath){
-        File dirFile = new File(dirPath);
-        if(!dirFile.exists()){
-            if(dirFile.mkdirs()){
-                //PrintHelper.printSuccess("Created " + dirPath);
-            }
-        }
-        else {
-            //PrintHelper.printFail("Could not create " + dirPath);
+            String inFileDir = nodeDir + "/in";
+            String outFileDir = nodeDir + "/out";
+
+            Util.writeNodesToFile(inFileDir, node.getInNodes());
+            Util.writeNodesToFile(outFileDir, node.getOutNodes());
         }
     }
 
@@ -211,4 +199,5 @@ public class PageCrawler extends Crawler implements Harvester {
     public void sendRelayedTaskFinished(String toSendTo, String page) {
         tcpConnectionsCache.sendEvent(toSendTo, new CrawlerReportsRelayedTaskFinished());
     }
+
 }

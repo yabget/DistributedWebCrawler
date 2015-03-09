@@ -1,5 +1,6 @@
 package Graph;
 
+import java.util.Collection;
 import java.util.Hashtable;
 
 /**
@@ -19,6 +20,14 @@ public class Node {
 
     public String getValue(){
         return value;
+    }
+
+    public Collection<Node> getInNodes(){
+        return in.values();
+    }
+
+    public Collection<Node> getOutNodes(){
+        return out.values();
     }
 
     public void addIn(Node node){
