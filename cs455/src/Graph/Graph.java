@@ -1,29 +1,33 @@
 package Graph;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
-import java.util.List;
 
 /**
  * Created by ydubale on 2/28/15.
  */
 public class Graph {
 
-    private Hashtable<String, Node> nodes;
-    private int recursionDepth;
-
-    private ArrayList<String> brokenLinks;
-
     private String rootURL;
+    private Hashtable<String, Node> nodes;
 
     public Graph(String rootURL){
-        this.brokenLinks = new ArrayList<String>();
         this.rootURL = rootURL;
         nodes = new Hashtable<String, Node>();
-        recursionDepth = 1;
     }
 
+    public String getRootURL(){
+        return rootURL;
+    }
+
+    public Collection<Node> getNodes(){
+        return nodes.values();
+    }
+
+    /**
+     * Adds the node to the graph
+     * @param urlToAdd - url to add to graph
+     */
     public void addNode(String urlToAdd){
         synchronized (nodes){
             if(!nodes.containsKey(urlToAdd)){
@@ -32,41 +36,24 @@ public class Graph {
         }
     }
 
-    public synchronized void addBrokenLink(String brokenLink){
-        brokenLinks.add(brokenLink);
-    }
-
-    public String getRootURL(){
-        return rootURL;
-    }
-
-    public synchronized void incrementDepth(){
-        recursionDepth++;
-    }
-
-    public synchronized int getRecursionDepth(){
-        return recursionDepth;
-    }
-
-    public void addFromTo(String nodeToAddToString, String urlNode){
+    /**
+     * Creates an edge between two nodes.
+     * Adds the destination to the out node of the source
+     * Adds the source to the in node of the destination
+     * @param source - the source node
+     * @param destination - the destination node
+     */
+    public void addFromTo(String source, String destination){
         synchronized (nodes){
             //If the node to add to DNE, create it
-            addNode(nodeToAddToString);
-            addNode(urlNode);
+            addNode(source);
+            addNode(destination);
 
-            Node toAddTo = nodes.get(nodeToAddToString);
+            Node toAddTo = nodes.get(source);
 
-            toAddTo.addOut(nodes.get(urlNode));
-            nodes.get(urlNode).addIn(toAddTo);
+            toAddTo.addOut(nodes.get(destination));
+            nodes.get(destination).addIn(toAddTo);
         }
-    }
-
-    public Collection<Node> getNodes(){
-        return nodes.values();
-    }
-
-    public List<String> getBrokenLinks(){
-        return brokenLinks;
     }
 
     public void printTree(){
@@ -74,21 +61,4 @@ public class Graph {
             System.out.println(node);
         }
     }
-
-    public static void main(String[] args){
-
-        Graph myG = new Graph("B");
-
-        myG.addNode("D");
-        myG.addNode("C");
-        myG.addFromTo("A", "B");
-        myG.addFromTo("C", "A");
-
-        myG.addFromTo("A", "C");
-
-
-        myG.printTree();
-
-    }
-
 }

@@ -8,9 +8,9 @@ import java.util.Hashtable;
  */
 public class Node {
 
+    private String value;
     private Hashtable<String, Node> in;
     private Hashtable<String, Node> out;
-    private String value;
 
     public Node(String value) {
         this.value = value;
@@ -22,10 +22,18 @@ public class Node {
         return value;
     }
 
+    /**
+     * Returns all of the nodes that point to this node
+     * @return
+     */
     public Collection<Node> getInNodes(){
         return in.values();
     }
 
+    /**
+     * Returns all of the nodes that this node points to
+     * @return
+     */
     public Collection<Node> getOutNodes(){
         return out.values();
     }
@@ -40,9 +48,9 @@ public class Node {
 
     public String toString(){
         //todo: Use stringbuffer
-        String toReturn = value + "--->\n";
-        String inS = "\tIn------------------------------------------------------------------------------------\n\t\t\t";
-        String outS = "\tOut++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\t\t\t";
+        String toReturn = value + " --->\n";
+        String inS = "\tIN\n\t\t\t";
+        String outS = "\tOut\n\t\t\t";
 
         for(String inNodes : in.keySet()){
             inS += "\t\t\t" + inNodes + "\n";
@@ -53,6 +61,5 @@ public class Node {
         }
 
         return toReturn + inS + "\n" + outS + "\n";
-
     }
 }
