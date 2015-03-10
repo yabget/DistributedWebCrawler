@@ -47,8 +47,6 @@ public class Crawler {
             crawler.startThreadPoolManager();
 
             crawler.writeGraphToDirectories();
-            Util.sleepSeconds(5, false);
-            System.exit(0);
 
         } catch (IOException e) {
             Util.printErrorExit("Crawler - Could not start server on " + clp.portNum);
