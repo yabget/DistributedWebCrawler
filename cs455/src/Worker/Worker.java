@@ -97,7 +97,7 @@ public class Worker implements Runnable {
         }
     }
 
-    public void sendRelayedTaskFinished(String toSendTo, String page) {
-        pageCrawler.sendRelayedTaskFinished(toSendTo, page);
+    public void sendRelayedTaskFinished(String toSendTo) {
+        pageCrawler.sendRelayedTaskFinished(toSendTo);
     }
 }

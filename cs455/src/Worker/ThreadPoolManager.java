@@ -41,9 +41,9 @@ public class ThreadPoolManager {
     public void addToTask(Task task){
         synchronized (tasks){
             tasks.offer(task);
-            System.out.println("THEADPOOLMANAGER - NEW TASK ADDED TO QUEUE: " + tasks.size());
+            //System.out.println("THEADPOOLMANAGER - NEW TASK ADDED TO QUEUE: " + tasks.size());
             tasks.notify();
-            System.out.println("THEADPOOLMANAGER - SENT NOTIFIED: " + tasks.size());
+            //System.out.println("THEADPOOLMANAGER - SENT NOTIFIED: " + tasks.size());
         }
     }
 
@@ -54,9 +54,9 @@ public class ThreadPoolManager {
         PrintHelper.printAlert("THEADPOOLMANAGER - Started all threads");
         try {
             for(Thread thread : threadpool){
-                System.out.println("Thread waiting for join " + thread.getId());
+                //System.out.println("Thread waiting for join " + thread.getId());
                 thread.join();
-                System.out.println("Thread Joined " + thread.getId());
+                //System.out.println("Thread Joined " + thread.getId());
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
