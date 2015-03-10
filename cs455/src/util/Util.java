@@ -13,6 +13,23 @@ import java.util.Collection;
  */
 public final class Util {
 
+    // Command line errors
+    public static final String INVALID_PORT = "Invalid port range. Must be between 1024 - 65535.";
+    public static final String INVALID_PORT_FORMAT = "Improper port number format.";
+    public static final String INVALID_THREAD_POOL_SIZE = "Invalid thread pool size given.";
+    public static final String COULD_NOT_READ_URL = "Problem during url extraction.";
+
+    public static final String[] validRedirectDomains = {
+            "http://www.bmb.colostate.edu",
+            "http://www.biology.colostate.edu",
+            "http://www.chem.colostate.edu",
+            "http://www.cs.colostate.edu",
+            "http://www.math.colostate.edu",
+            "http://www.physics.colostate.edu",
+            "http://www.colostate.edu/Depts/Psychology",
+            "http://www.stat.colostate.edu"
+    };
+
     public static void sleepSeconds(int seconds, boolean printHelp){
         try {
             if(printHelp){
@@ -38,7 +55,7 @@ public final class Util {
             //System.out.println("Created file: " + fileName);
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file, true));
             for(Node content : collection){
-                bufferedWriter.write(content.getValue());
+                bufferedWriter.write(content.getValue() +"\n");
             }
             bufferedWriter.close();
         } catch (IOException e) {
@@ -46,5 +63,46 @@ public final class Util {
         }
     }
 
+    public static void writeStringsToFile(String fileName, Collection<String> collection){
+        try {
+            File file = new File(fileName);
+            file.getParentFile().mkdirs();
+            file.createNewFile();
+            //System.out.println("Created file: " + fileName);
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file, true));
+            for(String content : collection){
+                bufferedWriter.write(content + "\n");
+            }
+            bufferedWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static String convertURLToDirectory(String dirURL){
+        dirURL.replace("https://", "");
+        dirURL = dirURL.replace("http://", "");
+
+        dirURL = dirURL.replaceAll("/", "_");
+
+        return dirURL;
+    }
+
+    public static void printSuccess(String success){
+        System.out.println("[SUCCESS]: " + success);
+    }
+
+    public static void printAlert(String alert){
+        System.out.println("[ALERT]: " + alert);
+    }
+
+    public static void printFail(String fail){
+        System.out.println("[FAIL]: " + fail);
+    }
+
+    public static void printErrorExit(String error){
+        System.out.println("[ERROR]: " + error);
+        System.exit(1);
+    }
 
 }

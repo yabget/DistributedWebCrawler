@@ -35,7 +35,6 @@ public class CommandLineParser {
     }
 
     /**
-     * TODO: What is a valid path? Will it include fileName?
      * @param pathToConfigFile
      */
     private Crawler[] parseConfigFile(String pathToConfigFile) {
@@ -45,7 +44,7 @@ public class CommandLineParser {
         try {
             bufferedReader = new BufferedReader(new FileReader(file));
         } catch (FileNotFoundException e) {
-            PrintHelper.printFail("configFile not found!");
+            Util.printFail("configFile not found!");
         }
 
         Crawler[] crawlers = new Crawler[8];
@@ -58,7 +57,7 @@ public class CommandLineParser {
                 count++;
             }
         } catch (IOException e) {
-            PrintHelper.printFail("CommandLineParser - parsing file config file");
+            Util.printFail("CommandLineParser - parsing file config file");
         }
 
         return crawlers;
@@ -78,7 +77,6 @@ public class CommandLineParser {
     }
 
     /**
-     * TODO: What format is accepted?
      * @param rootUrl
      */
     private void parseRootUrl(String rootUrl) {
@@ -86,7 +84,6 @@ public class CommandLineParser {
     }
 
     /**
-     * TODO: What is an upper limit to thread pool size?
      * @param threadPoolSizeString
      */
     private void parseThreadPoolSize(String threadPoolSizeString) {
@@ -94,7 +91,7 @@ public class CommandLineParser {
             this.threadPoolSize = Integer.parseInt(threadPoolSizeString);
         }
         catch (NumberFormatException notValidNumber){
-            PrintHelper.printErrorExit(PrintHelper.INVALID_THREAD_POOL_SIZE);
+            Util.printErrorExit(Util.INVALID_THREAD_POOL_SIZE);
         }
     }
 
@@ -103,12 +100,12 @@ public class CommandLineParser {
             int portNum = Integer.parseInt(portString);
 
             if(portNum < MIN_VALID_PORT || portNum > MAX_VALID_PORT){
-                PrintHelper.printErrorExit(PrintHelper.INVALID_PORT);
+                Util.printErrorExit(Util.INVALID_PORT);
             }
             return portNum;
         }
         catch (NumberFormatException notValidPort){
-            PrintHelper.printErrorExit(PrintHelper.INVALID_PORT_FORMAT);
+            Util.printErrorExit(Util.INVALID_PORT_FORMAT);
         }
         return -1;
     }

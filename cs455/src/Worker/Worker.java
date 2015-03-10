@@ -4,7 +4,6 @@ import Graph.Graph;
 import Task.Task;
 import harvester.PageCrawler;
 import transport.TCPConnectionsCache;
-import util.PrintHelper;
 import util.Util;
 import wireformats.CrawlerReportsSelfTasksFinished;
 import wireformats.CrawlerReportsTasksNotFinished;
@@ -61,39 +60,38 @@ public class Worker implements Runnable {
     public void run() {
         Task toDo;
         while(true){
-            //System.out.print("I AM: " + Thread.currentThread().getId() + " ");
-            Util.sleepSeconds(1, false);
-
+            Util.sleepSeconds(1, false); //Niceness factor for thread
             try {
                 synchronized (tasks) {
                     toDo = tasks.poll();
+                }
 
-                    if(toDo != null){
-                        toDo.execute(this);
-                        CrawlerReportsTasksNotFinished notFin = new CrawlerReportsTasksNotFinished(graph.getRootURL());
-                        tcpConnectionsCache.sendToAll(notFin);
-                        //System.out.println("WORKER - " + Thread.currentThread().getId() + " FINISHED! TASKS LEFT " + tasks.size());
+                if (toDo != null) {
+                    toDo.execute(this);
+                    CrawlerReportsTasksNotFinished notFin = new CrawlerReportsTasksNotFinished(graph.getRootURL());
+                    tcpConnectionsCache.sendToAll(notFin);
+                    System.out.println("Tasks left: " + tasks.size());
+                    continue;
+                }
+
+                if(pageCrawler.getRelayedCount() == 0 && pageCrawler.allOtherCrawlersFinished()){
+                    tcpConnectionsCache.sendToAll(new CrawlerReportsSelfTasksFinished(graph.getRootURL()));
+                    Util.printAlert("NICE! All other crawlers finished and I am finished with my tasks." +
+                            " Goodbye.");
+                    break;
+                }
+
+                synchronized (tasks){
+                    if (!tasks.isEmpty()) {
                         continue;
                     }
-                    if(tasks.isEmpty()){
-                        tcpConnectionsCache.sendToAll(new CrawlerReportsSelfTasksFinished(graph.getRootURL()));
-                    }
-                    //System.out.println("SENT TO ALL! RelayedCount == " + pageCrawler.getRelayedCount() +
-                            //"\tALL CRAWLERS FIN: " + pageCrawler.allOtherCrawlersFinished());
-                    if(pageCrawler.getRelayedCount() == 0 && pageCrawler.allOtherCrawlersFinished()){
-                        PrintHelper.printAlert("NICE! All other crawlers finished and I am finished with my tasks." +
-                                " Goodbye.");
-                        break;
-                    }
-                    //System.out.println("WORKER - " + Thread.currentThread().getId() +" WAITING FOR TASK " +tasks.size());
-
-                    tasks.wait();
+                    tcpConnectionsCache.sendToAll(new CrawlerReportsSelfTasksFinished(graph.getRootURL()));
+                    tasks.wait(5000);
                 }
-                //System.out.println("WORKER - " + Thread.currentThread().getId() + " GOT NOTIFIED OF TASK " + tasks.size());
+
             } catch (InterruptedException e) {
                 System.out.println("WORKER -  Interrupted while waiting on Task.");
             }
-
         }
     }
 

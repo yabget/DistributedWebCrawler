@@ -8,8 +8,6 @@ import transport.TCPConnection;
 import transport.TCPConnectionsCache;
 import transport.TCPServerThread;
 import util.HTMLParser;
-import util.PrintHelper;
-import util.Storage;
 import util.Util;
 import wireformats.*;
 
@@ -19,6 +17,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Created by ydubale on 3/5/15.
@@ -78,9 +77,9 @@ public class PageCrawler extends Crawler implements Harvester {
                 tcpConnectionsCache.addNewConn(crawler.rootURL, new TCPConnection(socket, this));
             }
         } catch (UnknownHostException e) {
-            PrintHelper.printErrorExit("PageCrawler - Could not connect with : " + this.hostName);
+            Util.printErrorExit("PageCrawler - Could not connect with : " + this.hostName);
         } catch (IOException e) {
-            PrintHelper.printErrorExit("PageCrawler - Could not create socket with: " + this.hostName);
+            Util.printErrorExit("PageCrawler - Could not create socket with: " + this.hostName);
         }
     }
 
@@ -93,7 +92,7 @@ public class PageCrawler extends Crawler implements Harvester {
             Thread serverThread = new Thread(new TCPServerThread(this, serverSocket));
             serverThread.start();
         } catch (IOException e) {
-            PrintHelper.printErrorExit("PageCrawler - Could not start server socket for listening.");
+            Util.printErrorExit("PageCrawler - Could not start server socket for listening.");
         }
     }
 
@@ -110,7 +109,7 @@ public class PageCrawler extends Crawler implements Harvester {
      */
     private void handleRelayedURLToCrawl(Event event) {
         RelayURLToCrawl relayURLToCrawl = (RelayURLToCrawl) event;
-        //PrintHelper.printSuccess("Receieved: " + relayURLToCrawl.getUrlToCrawl() + " to crawl.");
+        Util.printSuccess("Receieved: " + relayURLToCrawl.getUrlToCrawl() + " to crawl.");
 
         String toCrawl = relayURLToCrawl.getUrlToCrawl();
         String sender = relayURLToCrawl.getSenderURL();
@@ -131,10 +130,10 @@ public class PageCrawler extends Crawler implements Harvester {
 
         synchronized (completedCrawlers){
             if(!completedCrawlers.contains(otherCrawlerURL)){
-
                 completedCrawlers.add(otherCrawlerURL);
-
+                //Util.printAlert(completedCrawlers.size()-1 + " crawlers say they are finished.");
                 threadPoolManager.notifyTaskPool(); //Notify everyone waiting on TaskPool
+
             }
         }
     }
@@ -150,8 +149,8 @@ public class PageCrawler extends Crawler implements Harvester {
 
         synchronized (completedCrawlers){
             if(completedCrawlers.contains(notFin.getCrawlerRootURL())){
-                completedCrawlers.remove(completedCrawlers);
-
+                completedCrawlers.remove(notFin.getCrawlerRootURL());
+                //Util.printAlert(notFin.getCrawlerRootURL() + " says not finished with tasks.");
                 threadPoolManager.notifyTaskPool(); // Triggers check for all crawlers completed
             }
         }
@@ -163,7 +162,7 @@ public class PageCrawler extends Crawler implements Harvester {
      * @return
      */
     public synchronized boolean allOtherCrawlersFinished(){
-        for(String validURL : Storage.validRedirectDomains){
+        for(String validURL : Util.validRedirectDomains){
             if(!completedCrawlers.contains(validURL)){
                 return false;
             }
@@ -175,20 +174,40 @@ public class PageCrawler extends Crawler implements Harvester {
      * Writes the content of the graph to directories
      */
     public void writeGraphToDirectories(){
+        String currentCrawler = graph.getRootURL();
+        Util.printAlert("I am " + currentCrawler +"Writing my graph to directories.");
         String rootURL = graph.getRootURL();
-        String rootDir = HTMLParser.convertToDirectory(rootURL);
+        String rootDir = Util.convertURLToDirectory(rootURL);
 
         String dirPrefix = "/tmp/cs455-ydubale/" + rootDir + "/nodes/";
 
+        int disjointG = 1;
         for(Node node : graph.getNodes()){
-            String nodeDir = dirPrefix + HTMLParser.convertToDirectory(node.getValue());
+            if(node.getValue().contains(graph.getRootURL())){
+                String nodeDir = dirPrefix + Util.convertURLToDirectory(node.getValue());
+                String inFileDir = nodeDir + "/in";
+                String outFileDir = nodeDir + "/out";
 
-            String inFileDir = nodeDir + "/in";
-            String outFileDir = nodeDir + "/out";
+                Util.writeNodesToFile(inFileDir, node.getInNodes());
+                Util.writeNodesToFile(outFileDir, node.getOutNodes());
+            }
+            else {
+                String disGPrefix = "/tmp/cs455-ydubale/" + rootDir + "/disjoint-subgraphs/";
 
-            Util.writeNodesToFile(inFileDir, node.getInNodes());
-            Util.writeNodesToFile(outFileDir, node.getOutNodes());
+                String file = disGPrefix + "graph" + disjointG;
+                disjointG++;
+
+                Collection<Node> toWrite = new ArrayList<Node>();
+                toWrite.add(node);
+
+                Util.writeNodesToFile(file, toWrite);
+            }
         }
+
+        String brokenLinksFile = "/tmp/cs455-ydubale/" + rootDir + "/broken-links";
+        Util.writeStringsToFile(brokenLinksFile, HTMLParser.getInstance().getBrokenLinks());
+
+        Util.printAlert("Finished writing graph to directories.");
     }
 
     /**
@@ -223,7 +242,7 @@ public class PageCrawler extends Crawler implements Harvester {
                     handleOtherCrawlerTaskNotFinished(event);
                     return;
                 default:
-                    PrintHelper.printFail("PageCrawler - Unrecognized event! " + protocol);
+                    Util.printFail("PageCrawler - Unrecognized event! " + protocol);
             }
         }
     }

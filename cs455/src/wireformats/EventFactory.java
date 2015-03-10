@@ -1,6 +1,6 @@
 package wireformats;
 
-import util.PrintHelper;
+import util.Util;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -30,7 +30,7 @@ public class EventFactory {
             case Protocol.CRAWLER_REPORTS_TASKS_NOT_FINISHED:
                 return new CrawlerReportsTasksNotFinished(data);
             default:
-                PrintHelper.printFail("EventFactory - Unrecognized event");
+                Util.printFail("EventFactory - Unrecognized event");
         }
 
         return null;

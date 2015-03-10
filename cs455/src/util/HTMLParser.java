@@ -5,10 +5,7 @@ import net.htmlparser.jericho.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.*;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by ydubale on 3/6/15.
@@ -17,13 +14,12 @@ import java.util.Set;
 
 public class HTMLParser {
 
-    private static final String HREF = "href";
-
     private static final HTMLParser ourInstance = new HTMLParser();
 
-    private Map<String, String> crawledURLs = new HashMap<String, String>();
-    private Map<String, String> badURLs = new HashMap<String, String>();
-    private Map<String, String> relayedURLs = new HashMap<String, String>();
+    private Map<String, String> crawledURLs = new Hashtable<String, String>();
+    private Map<String, String> brokenURLs = new Hashtable<String, String>();
+    private Map<String, String> relayedURLs = new Hashtable<String, String>();
+    private Map<String, String> ignoredURLs = new Hashtable<String, String>();
 
     public static HTMLParser getInstance() {
         return ourInstance;
@@ -32,119 +28,59 @@ public class HTMLParser {
     private HTMLParser() {
     }
 
-    // True if not sent before
+    /**
+     * Adds to the list of relayed urls, this list is kept so that other crawlers
+     * don't get duplicate requests for crawls from one(this) crawler
+     * @param relayedURL - the url to relay
+     * @return True if url has not been sent before
+     */
     public boolean addToRelayedURLs(String relayedURL){
         synchronized (relayedURLs){
             if(relayedURLs.containsKey(relayedURL)){
                 return false;
             }
-            relayedURLs.put(relayedURL, null);
+            relayedURLs.put(relayedURL, relayedURL);
             return true;
         }
     }
 
-    public static String convertToDirectory(String url){
-        String dirURL = url;
-
-        dirURL.replace("https://", "");
-        dirURL = dirURL.replace("http://", "");
-
-        /*if(dirURL.charAt(dirURL.length()-1) == '/'){
-            dirURL = dirURL.substring(0, dirURL.length()-1);
-        }*/
-        dirURL = dirURL.replaceAll("/", "_");
-
-        return dirURL;
-    }
-
-    private String resolveRedirects(String url) {
-        HttpURLConnection con = null;
-        try {
-            con = (HttpURLConnection)(new URL(url).openConnection());
-            con.setInstanceFollowRedirects(false);
-            con.connect();
-
-            int responseCode = con.getResponseCode();
-            if(responseCode == 301){
-                return con.getHeaderField("Location");
-            }
-
-        } catch (IOException e) {
-            synchronized (badURLs){
-                badURLs.put(url, null);
-            }
-            PrintHelper.printFail("HTMLParser - Could not open connection in redirect: " + url);
-        }
-        return url;
-    }
-
+    /**
+     * Checks if the href received is valid.
+     * @param href - the href to check
+     * @return True if it is a valid href
+     */
     private boolean isValidHREF(String href){
-        if(href == null || href.length() == 0){
-             //System.out.println("[INVALID]: " + href);
-            return false;
-        }
-        if(href.startsWith("#") || href.startsWith("mailto") ||
-                href.startsWith("https") || href.startsWith("ftp")){
-            //System.out.println("[INVALID]: " + href);
+        if(href.startsWith("#") || href.startsWith("mailto") || href.startsWith("https") || href.startsWith("ftp")){
             return false;
         }
         return true;
     }
 
+    /**
+     * Checks if the page received is within the domain of the 8 crawlers
+     * @param page - a web page with http://www...
+     * @return True if the page is with in the 8 crawlers domain
+     */
     private boolean isValidPage(String page) {
-        for(String validpage : Storage.validRedirectDomains){
-            if(page.contains(validpage)){
+        for(String validPage : Util.validRedirectDomains){
+            if(page.contains(validPage)){
                 return true;
             }
         }
-        //System.out.println("[INVALID]: " + page);
         return false;
     }
 
-    private String removeHTTP(String url){
-        url = url.toLowerCase();
-        if(url.contains("https://")){
-            return url.replaceAll("https://", "");
-        }
-        if(url.contains("http://")){
-            return url.replaceAll("http://", "");
-        }
-        return url;
-    }
-
-    private String resolveRelativePath(String pageURL, String href){
-        if(href.startsWith("./")){
-            pageURL = removeSlashAtEndOfURL(pageURL);
-            return pageURL + href.replaceAll("\\./", "/");
-        }
-
-        String urlPrefix = pageURL.split("://")[0] + "://";
-        pageURL = removeHTTP(pageURL);
-
-        String[] slashSeperated = pageURL.split("/");
-
-        int lastIndex = slashSeperated.length-1; //Skip page currently on
-
-        while(href.startsWith("../")){
-            if(lastIndex == 0){
-                break;
-            }
-            href = href.replaceFirst("../", "");
-            lastIndex--;
-        }
-
-        String rebuiltURL = urlPrefix;
-        for(int i=0; i < lastIndex; i++){
-            rebuiltURL += slashSeperated[i] + "/";
-        }
-        return rebuiltURL + href;
-    }
-
-    private String removeSlashAtEndOfURL(String url){
-        if(url.charAt(url.length()-1) == '/'){
-            return url.substring(0, url.length()-1);
-        }
-        return url;
+    /**
+     * Checks if the given page has a valid ending
+     * @param page - the page to check
+     * @return True if the page has a given ending
+     */
+    private boolean validEnding(String page) {
+        String[] dotDelim = page.split("\\.");
+        page = dotDelim[dotDelim.length-1];
+        return page.contains("html") || page.contains("htm") || page.contains("php") ||
+                page.contains("shtml") || page.contains("/") || page.contains("asp") ||
+                page.contains("jsp") || page.contains("cfm");
     }
 
     /**
@@ -221,128 +157,91 @@ public class HTMLParser {
         return normalized;
     }
 
-    public Set<String> getUnCrawledURLs(String page){
-        //PrintHelper.printAlert("Getting uncrawled pages: " + page);
+    public Collection<String> getBrokenLinks(){
+        return brokenURLs.keySet();
+    }
 
-        Set<String> uncrawledURLs = new HashSet<String>();
+    public Set<String> getUnCrawledURLs(String page){
+        Set<String> uncrawledURLs = new HashSet<String>(); // Local set to be returned
 
         Config.LoggerProvider = LoggerProvider.DISABLED;
 
-        //page = removeSlashAtEndOfURL(page);
-
         try{
-            /*String redirectResolvedPage = resolveRedirects(page);
-            if(!redirectResolvedPage.equals(page)){
-                PrintHelper.printAlert("Resolved " + page + " to " + redirectResolvedPage);
-            }*/
             HttpURLConnection connection = (HttpURLConnection)(new URL(page).openConnection());
-            connection.setReadTimeout(5 * 1000);
-            connection.setConnectTimeout(5 * 1000);
+            connection.setReadTimeout(20 * 1000);
+            connection.setConnectTimeout(20 * 1000);
             connection.connect();
+
             InputStream inputStream = connection.getInputStream();
-            // this is the actual url, the page is redirected to (if there is a redirect).
-            String redirectedUrl = connection.getURL().toString();
-            // instead of passing the URL, pass the input stream.
+
+            String redirectedUrl = connection.getURL().toString(); // Redirected url if exists
+
             Source source = new Source(inputStream);
-            //Source source = new Source(new URL(page));
 
-            // Go through all the anchor tags on the page
             for(Element anchorTag : source.getAllElements(HTMLElementName.A)){
-                String href = anchorTag.getAttributeValue(HREF);
+                String href = anchorTag.getAttributeValue("href");
 
-                if(!isValidHREF(href)){
+                if(href == null || href.length() == 0){
                     continue;
                 }
 
 
-
-                /*if(href.startsWith("/")){
-                    href = page + href;
+                if(href.toLowerCase().contains("%7e")){
+                    href = href.replaceAll("%7e", "~");
+                    href = href.replaceAll("%7E", "~");
                 }
-                else if(href.startsWith(".")){
-                    //System.out.print(href + " --------------------------------------- ");
-                    href = resolveRelativePath(redirectedUrl, href);
-                    //System.out.println(href + "\n");
-                }*/
+
+
+                if(!isValidHREF(href)){
+                    ignoredURLs.put(href, href);
+                    continue;
+                }
 
                 if(!new URI(href).isAbsolute()){
-                    //System.out.print(href + " --------------------------------------- ");
-                    href = new URI(page).resolve(href).toString();
-                    //System.out.println(href + "\n");
+                    href = new URI(redirectedUrl).resolve(href).toString();
                 }
 
                 href = normalize(href);
 
                 URL temp = new URL(href);
-                //Remove query and fragments
-                //URI(String scheme, String authority, String path, String query, String fragment)
-                //[scheme:][//authority][path][?query][#fragment]
-                href = "http://" + temp.getAuthority() + temp.getPath();
+                // [scheme:][//authority][path][?query][#fragment]
+                href = "http://" + temp.getAuthority() + temp.getPath(); //Remove query and fragments
 
-                if(!validEnding(href)){
-                    //PrintHelper.printFail("Not valid ending: " + href);
+                if(crawledURLs.containsKey(href)){
                     continue;
                 }
 
-                synchronized (badURLs){
-                    if(badURLs.containsKey(href)){
-                        //PrintHelper.printAlert("Bad URL " + href);
-                        continue;
-                    }
+                if(!validEnding(href)){
+                    ignoredURLs.put(href, href);
+                    continue;
                 }
 
-                synchronized (crawledURLs){
-                    if(crawledURLs.containsKey(href)){
-                        //PrintHelper.printAlert("Already crawled " + href);
-                        continue;
-                    }
+                if(brokenURLs.containsKey(href)){
+                    continue;
                 }
 
                 if(!isValidPage(href)){
-                    //PrintHelper.printAlert("Not valid " + href);
+                    ignoredURLs.put(href, href);
                     continue;
                 }
 
-                //System.out.println("[VALID]: " + href);
                 addToCrawledURLs(href);
-                uncrawledURLs.add(href);
+                uncrawledURLs.add(href); //Local uncrawled urls to be returned
             }
         }
         catch (MalformedURLException e) {
-            //e.printStackTrace();
-            //PrintHelper.printFail("HTMLParser - got malformed URL: " + page);
+            brokenURLs.put(page, page);
         } catch (IOException e) {
-            synchronized (badURLs){
-                badURLs.put(page, null);
-            }
-            //PrintHelper.printFail("HTMLParser - had read exception URL: " + page);
+            brokenURLs.put(page, page);
         } catch (URISyntaxException e) {
-            synchronized (badURLs){
-                badURLs.put(page, null);
-            }
+            brokenURLs.put(page, page);
         }
-        /*catch (URISyntaxException e) {
-            //e.printStackTrace();
-            synchronized (badURLs){
-                badURLs.put(page, null);
-            }
-        }
-        */
+
         return uncrawledURLs;
     }
 
-    private boolean validEnding(String href) {
-        String[] dotDelim = href.split("\\.");
-        href = dotDelim[dotDelim.length-1];
-        return href.contains("html") || href.contains("htm") || href.contains("php") ||
-                href.contains("shtml") || href.contains("/") || href.contains("asp") ||
-                href.contains("jsp") || href.contains("cfm");
-    }
-
     public void addToCrawledURLs(String url){
-        synchronized (crawledURLs){
-            crawledURLs.put(url, null);
-        }
+        crawledURLs.put(url, url);
     }
 
     public static void main(String[] args){
@@ -358,10 +257,9 @@ public class HTMLParser {
         //String page = "http://www.stat.colostate.edu/";
 
 
-        String page = "http://www.cs.colostate.edu/";
+        String page = "http://www.biology.colostate.edu";
 
         Set<String> firstLevel = HTMLParser.getInstance().getUnCrawledURLs(page);
-        //System.out.println("\nSize: " + firstLevel.size());
         for(String s : firstLevel){
             System.out.println(s);
         }

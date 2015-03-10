@@ -1,6 +1,5 @@
 package transport;
 
-import util.PrintHelper;
 import wireformats.Event;
 
 import java.util.Hashtable;
@@ -10,7 +9,7 @@ import java.util.Hashtable;
  */
 public class TCPConnectionsCache {
 
-    private Hashtable<String, TCPConnection> tcpConns;
+    private Hashtable<String, TCPConnection> tcpConns; //String is url, Connection with that domain
 
     public TCPConnectionsCache(){
         tcpConns = new Hashtable<String, TCPConnection>();
@@ -20,20 +19,19 @@ public class TCPConnectionsCache {
         tcpConns.put(url, tcpC);
     }
 
+    /**
+     * Sends the corresponding event to the appropriate crawler
+     * @param url - crawler to send to
+     * @param event - event to send
+     */
     public synchronized void sendEvent(String url, Event event){
-        if(event == null){
-            PrintHelper.printErrorExit("TCPConnectionsCache - event is null sending.");
-        }
-        if(tcpConns == null){
-            PrintHelper.printErrorExit("TCPConnectionsCache - is null.");
-        }
-        if(tcpConns.get(url) == null){
-            PrintHelper.printErrorExit("TCPConnectionsCache - get " + url + " is null.");
-        }
-
         tcpConns.get(url).sendData(event.getBytes());
     }
 
+    /**
+     * Sends the event to all the crawlers
+     * @param event - event to send
+     */
     public synchronized void sendToAll(Event event){
         for(TCPConnection tcpConnection : tcpConns.values()){
             tcpConnection.sendData(event.getBytes());

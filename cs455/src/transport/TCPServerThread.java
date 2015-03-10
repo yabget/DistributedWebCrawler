@@ -1,6 +1,7 @@
 package transport;
 
 import harvester.Harvester;
+import util.Util;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -19,11 +20,13 @@ public class TCPServerThread implements Runnable {
         this.harvester = harvester;
     }
 
+    /**
+     * Listens for connections and creates a new TCPConnection receiver for the connection
+     */
     @Override
     public void run() {
         try {
             Socket socket;
-            //System.out.println("Server thread is running: " + serverSocket.getLocalSocketAddress().toString());
             while((socket = serverSocket.accept()) != null){
                 //Starts a new receiver thread to listen on the socket
                 System.out.println("TCPServerThread - Accepted new connection! " + socket.getInetAddress().getHostAddress().toString());
@@ -31,7 +34,7 @@ public class TCPServerThread implements Runnable {
                 newConnection.startReceiveThread();
             }
         } catch (IOException e) {
-            System.out.println("TCPServerThread - Problem configuring new TCPConnection (TCPServerThread).");
+            Util.printErrorExit("TCPServerThread - Problem configuring new TCPConnection (TCPServerThread).");
         }
     }
 

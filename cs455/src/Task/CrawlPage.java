@@ -2,8 +2,7 @@ package Task;
 
 import Worker.Worker;
 import util.HTMLParser;
-import util.PrintHelper;
-import util.Storage;
+import util.Util;
 
 /**
  * Created by ydubale on 2/28/15.
@@ -11,10 +10,11 @@ import util.Storage;
 
 public class CrawlPage implements Task {
 
-    private String page;
-    private int recursionDepth;
     private boolean isRelayedPacket;
+    private int recursionDepth;
+
     private String relayerURL;
+    private String page;
 
     public CrawlPage(String page, int recursionDepth, boolean isRelayedPacket, String relayerURL){
         this.page = page;
@@ -23,20 +23,31 @@ public class CrawlPage implements Task {
         this.relayerURL = relayerURL;
     }
 
+    /**
+     * This method executes the task
+     * - Adds the page to the graph and populates the in/out edges
+     * - Spawns child tasks if needed
+     * - Relays page to other crawler if the page is not in the domain
+     * @param worker - The current worker of this task
+     */
     @Override
     public void execute(Worker worker) {
-        if(recursionDepth > 5){
+        worker.addPageToGraph(page);
+
+        if(recursionDepth >= 5 ){
+            // Don't add the links at the last depth to tasks, but add them to the graph
+            for(String outNode : HTMLParser.getInstance().getUnCrawledURLs(page)){
+                worker.addFromToGraph(this.page, outNode);
+            }
             return;
         }
 
-        worker.addPageToGraph(page); // Adds the page without prefix, for directory creation purposes
+        if(!page.contains(worker.getRootURL())){ // Not my domain
 
-        if(!page.contains(worker.getRootURL())){
-            // Not the same domain
-            for(String otherCrawlerURL : Storage.validRedirectDomains){
+            for(String otherCrawlerURL : Util.validRedirectDomains){
                 if(page.contains(otherCrawlerURL)){
-                    if(HTMLParser.getInstance().addToRelayedURLs(page)){
-                        PrintHelper.printAlert("CrawlPage - Sending: [" + page + "] to crawler " + otherCrawlerURL);
+                    if(HTMLParser.getInstance().addToRelayedURLs(page)){ //True if page has not already been relayed
+                        Util.printAlert("Sent " + page + " to " + otherCrawlerURL);
                         worker.relayToOtherCrawler(otherCrawlerURL, page);
                         worker.incrementRelayedCount();
                     }
@@ -45,10 +56,11 @@ public class CrawlPage implements Task {
             }
             return;
         }
+
         //System.out.println("[CRAWLED " + recursionDepth + "]\t" + page);
 
         if(isRelayedPacket){
-            worker.sendRelayedTaskFinished(relayerURL, page);
+            worker.sendRelayedTaskFinished(relayerURL);
         }
 
         //Add to graph all the out-in node relationships

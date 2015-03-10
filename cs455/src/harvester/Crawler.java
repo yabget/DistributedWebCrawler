@@ -1,7 +1,6 @@
 package harvester;
 
 import util.CommandLineParser;
-import util.PrintHelper;
 import util.Util;
 
 import java.io.IOException;
@@ -48,9 +47,11 @@ public class Crawler {
             crawler.startThreadPoolManager();
 
             crawler.writeGraphToDirectories();
+            Util.sleepSeconds(5, false);
+            System.exit(0);
 
         } catch (IOException e) {
-            PrintHelper.printErrorExit("Crawler - Could not start server on " + clp.portNum);
+            Util.printErrorExit("Crawler - Could not start server on " + clp.portNum);
         }
     }
 }
