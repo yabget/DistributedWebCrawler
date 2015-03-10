@@ -25,7 +25,6 @@ public class Crawler {
         return this.hostName + "\t\t" + this.port + "\t\t" + this.rootURL;
     }
 
-
     public static void main(String[] args){
         CommandLineParser clp = new CommandLineParser(args);
 
@@ -38,20 +37,20 @@ public class Crawler {
         try {
             PageCrawler crawler = new PageCrawler(clp.threadPoolSize, clp.rootUrl, clp.portNum, clp.getCrawlers());
             crawler.startServerThread();
-            //Wait for all servers to start on other machines
-            Util.sleepSeconds(10, true);
+
+            Util.sleepSeconds(10, true); //Wait for all servers to start on other machines
             System.out.println(" CRAWLER - Connecting with other crawlers");
             crawler.setupConnectionWithOtherCrawlers();
-            //Wait to make sure all connections have been made
-            Util.sleepSeconds(10, true);
+
+
+            Util.sleepSeconds(10, true); //Wait to make sure all connections have been made
             System.out.println(" CRAWLER - Starting thread pool");
             crawler.startThreadPoolManager();
+
             crawler.writeGraphToDirectories();
-            System.out.println("I am " + clp.rootUrl + " exiting! Goodybye and so long for all the links.");
 
         } catch (IOException e) {
-            //e.printStackTrace();
-            PrintHelper.printErrorExit("Could not start server on " + clp.portNum);
+            PrintHelper.printErrorExit("Crawler - Could not start server on " + clp.portNum);
         }
     }
 }
